@@ -97,7 +97,25 @@
 4. Add the needed measure/probability infrastructure before attempting the main stochastic theorem.
 
 ## Status
-- not started
+- partial
+- Theorem 17.1 (both clauses) is formalized in
+  [Chapter17PanelData.lean](../HansenEconometrics/Chapter17PanelData.lean) for general,
+  possibly **unbalanced** panels, matching the scope at which Hansen states it. Observations
+  are indexed by an arbitrary finite type `n`, and a group map `g : n → ι` records which
+  individual produced each observation — the style of the `cluster : n → G` convention
+  already used in [Chapter4LeastSquaresRegression.lean](../HansenEconometrics/Chapter4LeastSquaresRegression.lean).
+  Individual `j` contributes `groupSize g j` observations (Hansen's `Tⱼ = |Sⱼ|`), so
+  `DᵀD = diag(T₁,…,T_N)`. The only panel hypothesis is `Function.Surjective g`, which is
+  Hansen's implicit requirement that every individual be observed at least once.
+- Equation (17.19) is formalized in both of its clauses (`M_D Y = Ẏ` and `M_D X = Ẋ`); it is
+  what makes Theorem 17.1 a statement about panels rather than a restatement of
+  Frisch-Waugh-Lovell.
+- The chapter now also exports the reusable panel primitives `groupSize`, `panelDummies`,
+  `individualMean`, `withinTransform`, and `withinTransformMatrix`, all in their general
+  (unbalanced) form, which Theorems 17.2/17.3, the between and differenced estimators, and
+  Chapter 18 are expected to reuse.
+- Everything else in the chapter (Theorems 17.2–17.4 and the asymptotic, covariance, and
+  dynamic-panel material) is still unformalized.
 
 ## LaTeX / Lean Crosswalk
 
@@ -112,17 +130,47 @@ Conventions:
 ## Links
 
 - [Hansen excerpt](../textbook/ch17/ch17_excerpt.txt)
+- [Chapter17PanelData.lean](../HansenEconometrics/Chapter17PanelData.lean)
 
 ## Crosswalk
 
 | Textbook result | Textbook statement | Lean theorem |
 | --- | --- | --- |
-| Theorem 17.1 | The ﬁxed effects estimator ofβ algebraically equals the dummy |  |
+| Equation (17.19) | With `D = diag{1_{T₁},…,1_{T_N}}` and `M_D = I_n − D(D'D)⁻¹D'`, both `M_D Y = Ẏ` and `M_D X = Ẋ`: regressing on the individual dummies is the within transformation. | vector clause: [annihilatorMatrix_panelDummies_mulVec](../HansenEconometrics/Chapter17PanelData.lean#L175); matrix clause: [residualizedRegressors_panelDummies](../HansenEconometrics/Chapter17PanelData.lean#L193); objects: [panelDummies](../HansenEconometrics/Chapter17PanelData.lean#L69), [panelDummies_transpose_mul_self](../HansenEconometrics/Chapter17PanelData.lean#L76), [panelDummiesGramInvertible](../HansenEconometrics/Chapter17PanelData.lean#L118), [individualMean](../HansenEconometrics/Chapter17PanelData.lean#L158), [withinTransform](../HansenEconometrics/Chapter17PanelData.lean#L163), [withinTransformMatrix](../HansenEconometrics/Chapter17PanelData.lean#L168) |
+| §17.8 group sizes `Tᵢ = \|Sᵢ\|` | The number of observations `Tᵢ` on individual `i` — the fibre of the group map, in bijection with Hansen's set `Sᵢ` of observed periods (§17.2), since the Lean development drops time labels and keeps only the grouping — the counts that make `D'D = diag(T₁,…,T_N)` and normalize `Ȳᵢ = (1/Tᵢ) ∑_{t ∈ Sᵢ} Yᵢₜ`. Unrestricted: the panel need not be balanced. | [groupSize](../HansenEconometrics/Chapter17PanelData.lean#L59); every individual observed at least once (`Tᵢ ≥ 1`): [groupSize_pos_of_surjective](../HansenEconometrics/Chapter17PanelData.lean#L99) |
+| Theorem 17.1 | The ﬁxed effects estimator of β algebraically equals the dummy variable estimator of β. The two estimators have the same residuals. | coefficient clause: [fixedEffectsBeta_eq_dummyVariableBeta](../HansenEconometrics/Chapter17PanelData.lean#L256); residual clause: [fixedEffects_residual_eq_dummyVariable_residual](../HansenEconometrics/Chapter17PanelData.lean#L275); estimators: [fixedEffectsBeta](../HansenEconometrics/Chapter17PanelData.lean#L211) (§17.9), [dummyVariableBeta](../HansenEconometrics/Chapter17PanelData.lean#L229) (§17.11, model 17.34) |
 | Theorem 17.2 | Under Assumption 17.2, as N → ∞, |  |
 | Theorem 17.3 | Under Assumption 17.3, as N → ∞, |  |
 | Theorem 17.4 | Under Assumption 17.4, as N → ∞, |  |
 
 ## Notes
 
-- This is currently a theorem-surface map for the chapter.
-- The Lean column is intentionally left blank until there is actual formalization to link.
+- The rest of this file is still a theorem-surface map for the chapter; the Lean column is
+  intentionally left blank where there is no formalization to link yet.
+- `Equation (17.19)` is the numbered display in §17.8, not §17.19 ("Identification in the
+  Fixed Effects Model"), which is unformalized.
+- **Column ordering.** Hansen's model (17.34) is `Y = Xβ + Du + ε`, i.e. `[X D]`. The Lean
+  `dummyVariableBeta` regresses on `[D X]` instead, because
+  [Chapter3FWL.lean](../HansenEconometrics/Chapter3FWL.lean) residualizes the *right* block
+  against the left. The two designs differ by a column permutation, so they give the same
+  `β` block and the same residuals — the full coefficient vectors, over `ι ⊕ k` and `k ⊕ ι`,
+  are permutations of one another rather than equal. **This equivalence is documented, not
+  proved.** It is closable with machinery already in the repo: `fromColsLeftBeta_eq_fwlLeftBeta`
+  (Hansen Theorem 3.4, the left-block branch of
+  [Chapter3FWL.lean](../HansenEconometrics/Chapter3FWL.lean)) gives
+  `fixedEffectsBeta g X y = fromColsLeftBeta X (panelDummies g) y` — Hansen's own column
+  order — by the same short proof; only the residual clause would need a new left-block
+  mirror of `fwl_residual_eq_full_residual`. Deferred to keep this PR to one theorem.
+- The **within-Gram** `Invertible` hypothesis is assumed rather than derived, matching
+  Hansen's own caveat in §17.9 that `∑ᵢ Ẋᵢ'Ẋᵢ` be full rank — which he notes requires all
+  components of `Xᵢₜ` to have time variation *for at least some individuals in the sample*.
+  The **full-design** hypothesis `Invertible ([D X]ᵀ[D X])` is the rank condition implicit in
+  estimating `(β, u)` jointly by least squares; given `DᵀD = diag(T₁,…,T_N)` and `M_D X = Ẋ`
+  it is in fact implied by the within-Gram hypothesis, so it is redundant on the statements
+  and is carried only because `dummyVariableBeta` needs it standalone. Note also that `D`
+  spans the constant vector, so by §17.16 an `X` carrying its own intercept column makes
+  `[D X]` rank deficient.
+- Theorem 17.1 reuses Hansen Theorem 3.5 (Frisch-Waugh-Lovell) from
+  [Chapter3FWL.lean](../HansenEconometrics/Chapter3FWL.lean) as its engine, exactly as
+  Hansen's §17.11 proof does, plus the two Chapter 3 transport lemmas `olsBeta_congr` and
+  `residual_congr` recorded in [ch3-inventory.md](./ch3-inventory.md).

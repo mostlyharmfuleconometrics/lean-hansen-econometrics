@@ -131,6 +131,8 @@ Conventions:
 | [gram_quadratic_pos](../../HansenEconometrics/LinearAlgebraUtils.lean#L121) | `0 < v ⬝ᵥ ((Xᵀ * X) *ᵥ v)` for any `v ≠ 0` under `[Invertible (Xᵀ * X)]`; the strict-positive-definiteness companion of `gram_quadratic_nonneg`, used to discharge the uniqueness hypothesis of Hansen Theorem 3.1 |
 | [gram_transpose](../../HansenEconometrics/LinearAlgebraUtils.lean#L51) | `(Xᵀ * X)ᵀ = Xᵀ * X` (relocated from `Chapter3Projections.lean` to break a potential circular import) |
 | [inv_gram_transpose](../../HansenEconometrics/LinearAlgebraUtils.lean#L60) | `(⅟ (Xᵀ * X))ᵀ = ⅟ (Xᵀ * X)` (relocated from `Chapter3Projections.lean` alongside `gram_transpose`; cited from Ch 3–5) |
+| [olsBeta_congr](../../HansenEconometrics/Chapter3LeastSquaresAlgebra.lean#L185) | `A = B → olsBeta A y = olsBeta B y`, transporting `olsBeta` across a propositional equality of design matrices. `Invertible` is data rather than a `Prop`, so `congr` cannot cross the two instances; `Subsingleton (Invertible _)` can. Used by Chapter 17 Theorem 17.1 |
+| [residual_congr](../../HansenEconometrics/Chapter3LeastSquaresAlgebra.lean#L194) | `A = B → residual A y = residual B y`; the `residual` companion of `olsBeta_congr`, used by the residual clause of Chapter 17 Theorem 17.1 |
 
 Note: the file-local helper `sumSquaredErrors_eq_linearProjectionMSE` (a pure notation bridge
 between Chapter 3's `sumSquaredErrors` and Chapter 2's `linearProjectionMSE`) is `private` and
