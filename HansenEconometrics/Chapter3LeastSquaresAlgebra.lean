@@ -177,4 +177,24 @@ theorem olsBeta_eq_of_minimizer
     (Xᵀ * X) (Xᵀ *ᵥ y) (y ⬝ᵥ y) b
     (gram_transpose X) (fun v hv => gram_quadratic_pos X hv) hb
 
+/-- Reusable helper: transport `olsBeta` across a propositional equality of design matrices.
+
+`Invertible` is data rather than a `Prop`, so `congr` cannot cross the two different
+`[Invertible (·ᵀ * ·)]` instances attached to `A` and `B`; `Subsingleton (Invertible _)`
+can. Cite this whenever two spellings of the same design matrix have to be reconciled. -/
+theorem olsBeta_congr {A B : Matrix n k ℝ} (h : A = B) (y : n → ℝ)
+    [iA : Invertible (Aᵀ * A)] [iB : Invertible (Bᵀ * B)] :
+    olsBeta A y = olsBeta B y := by
+  subst h
+  rw [Subsingleton.elim iA iB]
+
+/-- Reusable helper: transport `residual` across a propositional equality of design
+matrices. The `residual` companion of `olsBeta_congr`; see that lemma for why a plain
+`congr` does not work. -/
+theorem residual_congr {A B : Matrix n k ℝ} (h : A = B) (y : n → ℝ)
+    [iA : Invertible (Aᵀ * A)] [iB : Invertible (Bᵀ * B)] :
+    residual A y = residual B y := by
+  subst h
+  rw [Subsingleton.elim iA iB]
+
 end HansenEconometrics
