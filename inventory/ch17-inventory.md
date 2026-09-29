@@ -114,8 +114,14 @@
   `individualMean`, `withinTransform`, and `withinTransformMatrix`, all in their general
   (unbalanced) form, which Theorems 17.2/17.3, the between and differenced estimators, and
   Chapter 18 are expected to reuse.
-- Everything else in the chapter (Theorems 17.2–17.4 and the asymptotic, covariance, and
-  dynamic-panel material) is still unformalized.
+- The least squares estimates of the fixed effects, §17.17, are formalized: `û` is defined as
+  the dummy block of the dummy variable regression, and equation (17.51) — `ûᵢ` is the
+  individual-specific mean of `Yᵢₜ − Xᵢₜ'β̂_fe`, which equals `Ȳᵢ − X̄ᵢ'β̂_fe` — is derived
+  from it, along with Hansen's intermediate form `û = (D'D)⁻¹D'(Y − Xβ̂_fe)`. The §17.11
+  display `û = (D'D)⁻¹(D'Y) = vec(Ȳᵢ)`, for the error-component model without regressors, is
+  proved as a supporting lemma. Equation (17.52), which subtracts §17.16's intercept, is not.
+- Everything else in the chapter (Theorems 17.2–17.4, §17.16's intercept, and the asymptotic,
+  covariance, and dynamic-panel material) is still unformalized.
 
 ## LaTeX / Lean Crosswalk
 
@@ -139,6 +145,9 @@ Conventions:
 | Equation (17.19) | With `D = diag{1_{T₁},…,1_{T_N}}` and `M_D = I_n − D(D'D)⁻¹D'`, both `M_D Y = Ẏ` and `M_D X = Ẋ`: regressing on the individual dummies is the within transformation. | vector clause: [annihilatorMatrix_panelDummies_mulVec](../HansenEconometrics/Chapter17PanelData.lean#L175); matrix clause: [residualizedRegressors_panelDummies](../HansenEconometrics/Chapter17PanelData.lean#L193); objects: [panelDummies](../HansenEconometrics/Chapter17PanelData.lean#L69), [panelDummies_transpose_mul_self](../HansenEconometrics/Chapter17PanelData.lean#L76), [panelDummiesGramInvertible](../HansenEconometrics/Chapter17PanelData.lean#L118), [individualMean](../HansenEconometrics/Chapter17PanelData.lean#L158), [withinTransform](../HansenEconometrics/Chapter17PanelData.lean#L163), [withinTransformMatrix](../HansenEconometrics/Chapter17PanelData.lean#L168) |
 | §17.8 group sizes `Tᵢ = \|Sᵢ\|` | The number of observations `Tᵢ` on individual `i` — the fibre of the group map, in bijection with Hansen's set `Sᵢ` of observed periods (§17.2), since the Lean development drops time labels and keeps only the grouping — the counts that make `D'D = diag(T₁,…,T_N)` and normalize `Ȳᵢ = (1/Tᵢ) ∑_{t ∈ Sᵢ} Yᵢₜ`. Unrestricted: the panel need not be balanced. | [groupSize](../HansenEconometrics/Chapter17PanelData.lean#L59); every individual observed at least once (`Tᵢ ≥ 1`): [groupSize_pos_of_surjective](../HansenEconometrics/Chapter17PanelData.lean#L99) |
 | Theorem 17.1 | The ﬁxed effects estimator of β algebraically equals the dummy variable estimator of β. The two estimators have the same residuals. | coefficient clause: [fixedEffectsBeta_eq_dummyVariableBeta](../HansenEconometrics/Chapter17PanelData.lean#L256); residual clause: [fixedEffects_residual_eq_dummyVariable_residual](../HansenEconometrics/Chapter17PanelData.lean#L275); estimators: [fixedEffectsBeta](../HansenEconometrics/Chapter17PanelData.lean#L211) (§17.9), [dummyVariableBeta](../HansenEconometrics/Chapter17PanelData.lean#L229) (§17.11, model 17.34) |
+| §17.11 display `û = (D'D)⁻¹(D'Y) = vec(Ȳᵢ)` | In the error-component model without regressors, the least squares estimate of the fixed effects is the vector of individual means. | [invOf_panelDummies_gram_mulVec](../HansenEconometrics/Chapter17PanelData.lean#L334) |
+| Equation (17.51) | `ûᵢ = (1/Tᵢ) ∑_{t ∈ Sᵢ} (Yᵢₜ − Xᵢₜ'β̂_fe) = Ȳᵢ − X̄ᵢ'β̂_fe`, with the intermediate form `û = (D'D)⁻¹D'(Y − Xβ̂_fe)`: the fixed effects estimates are obtained from individual-specific means. Unrestricted: the panel need not be balanced. Hansen's two intermediate steps, `diag{Tᵢ⁻¹}∑ᵢ dᵢ1ᵢ'(…)` and `∑ᵢ dᵢ(Ȳᵢ − X̄ᵢ'β̂_fe)`, are computed inside `invOf_panelDummies_gram_mulVec` rather than stated as separate theorems. | object: [fixedEffectsEstimate](../HansenEconometrics/Chapter17PanelData.lean#L352) (defined by least squares, as in Hansen); intermediate form: [fixedEffectsEstimate_eq_invOf_gram](../HansenEconometrics/Chapter17PanelData.lean#L366); first equality: [fixedEffectsEstimate_eq_individualMean](../HansenEconometrics/Chapter17PanelData.lean#L389); second equality: [fixedEffectsEstimate_eq_mean_sub](../HansenEconometrics/Chapter17PanelData.lean#L399); `X̄ᵢ`: [individualMeanMatrix](../HansenEconometrics/Chapter17PanelData.lean#L314); linearity step: [individualMean_sub_mulVec](../HansenEconometrics/Chapter17PanelData.lean#L321) |
+| Equation (17.52) | With an intercept, `ûᵢ = Ȳᵢ − X̄ᵢ'β̂_fe − α̂_fe`. |  |
 | Theorem 17.2 | Under Assumption 17.2, as N → ∞, |  |
 | Theorem 17.3 | Under Assumption 17.3, as N → ∞, |  |
 | Theorem 17.4 | Under Assumption 17.4, as N → ∞, |  |
@@ -153,23 +162,33 @@ Conventions:
   `dummyVariableBeta` regresses on `[D X]` instead, because
   [Chapter3FWL.lean](../HansenEconometrics/Chapter3FWL.lean) residualizes the *right* block
   against the left. The two designs differ by a column permutation, so they give the same
-  `β` block and the same residuals — the full coefficient vectors, over `ι ⊕ k` and `k ⊕ ι`,
+  `β` block, the same `u` block (`fixedEffectsEstimate`), and the same residuals — the full
+  coefficient vectors, over `ι ⊕ k` and `k ⊕ ι`,
   are permutations of one another rather than equal. **This equivalence is documented, not
   proved.** It is closable with machinery already in the repo: `fromColsLeftBeta_eq_fwlLeftBeta`
   (Hansen Theorem 3.4, the left-block branch of
   [Chapter3FWL.lean](../HansenEconometrics/Chapter3FWL.lean)) gives
   `fixedEffectsBeta g X y = fromColsLeftBeta X (panelDummies g) y` — Hansen's own column
   order — by the same short proof; only the residual clause would need a new left-block
-  mirror of `fwl_residual_eq_full_residual`. Deferred to keep this PR to one theorem.
+  mirror of `fwl_residual_eq_full_residual`. For the `u` block, `normal_equations_fromCols_right`
+  gives the `D` block of the `[X D]` regression as `(D'D)⁻¹D'(Y − Xβ̂)` by the same argument as
+  `fixedEffectsEstimate_eq_invOf_gram`. Both are deferred follow-ups.
+- **Equation (17.52) is not formalized.** Hansen obtains it by subtracting §17.16's intercept
+  `α̂_fe = Ȳ − X̄'β̂_fe` from (17.51); that intercept is itself unformalized. On this repo's
+  reading, which is not Hansen's wording: `D` spans the constant vector, so `[1 D X]` is rank
+  deficient (cf. §17.8 and §17.16, where Hansen notes the fixed effects estimator does not
+  apply to time-invariant regressors, including an intercept). The least squares problem with
+  an intercept therefore has many solutions, and (17.52) is the one normalized by
+  `∑ᵢ Tᵢ ûᵢ = 0`.
 - The **within-Gram** `Invertible` hypothesis is assumed rather than derived, matching
   Hansen's own caveat in §17.9 that `∑ᵢ Ẋᵢ'Ẋᵢ` be full rank — which he notes requires all
   components of `Xᵢₜ` to have time variation *for at least some individuals in the sample*.
   The **full-design** hypothesis `Invertible ([D X]ᵀ[D X])` is the rank condition implicit in
   estimating `(β, u)` jointly by least squares; given `DᵀD = diag(T₁,…,T_N)` and `M_D X = Ẋ`
   it is in fact implied by the within-Gram hypothesis, so it is redundant on the statements
-  and is carried only because `dummyVariableBeta` needs it standalone. Note also that `D`
-  spans the constant vector, so by §17.16 an `X` carrying its own intercept column makes
-  `[D X]` rank deficient.
+  and is carried because `dummyVariableBeta` and `fixedEffectsEstimate` need it standalone.
+  Note also that `D` spans the constant vector, so an `X` carrying its own intercept column
+  makes `[D X]` rank deficient (cf. §17.8 and §17.16).
 - Theorem 17.1 reuses Hansen Theorem 3.5 (Frisch-Waugh-Lovell) from
   [Chapter3FWL.lean](../HansenEconometrics/Chapter3FWL.lean) as its engine, exactly as
   Hansen's §17.11 proof does, plus the two Chapter 3 transport lemmas `olsBeta_congr` and

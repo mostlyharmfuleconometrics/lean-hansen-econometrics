@@ -287,4 +287,122 @@ theorem fixedEffects_residual_eq_dummyVariable_residual {g : n → ι}
   rw [← h]
   exact (residual_congr (residualizedRegressors_panelDummies hg X) (withinTransform g y)).symm
 
+/-!
+### Hansen §17.17: the estimated fixed effects
+
+The dummy variable regression (17.33)–(17.34) estimates `β` and the fixed effects `u`
+jointly. Theorem 17.1 identifies its `β` block with `β̂_fe`; the results below identify its
+`u` block. As in Hansen, `û` is defined by least squares (`fixedEffectsEstimate`) and the
+individual-mean formula (17.51) is derived from it.
+
+Extending the module header's rule: the two statements below that mention `⅟(DᵀD)` install
+`panelDummiesGramInvertible` with a `letI` in the statement. The (17.51) statements do not
+mention it, so, like Theorem 17.1, they keep the instance inside the proof.
+
+Public surface added here: `individualMeanMatrix` (Hansen's `X̄ᵢ`) and
+`individualMean_sub_mulVec`; `invOf_panelDummies_gram_mulVec`, the §17.11 display
+`û = (D'D)⁻¹(D'Y) = vec(Ȳᵢ)`; `fixedEffectsEstimate`; and the three forms
+`fixedEffectsEstimate_eq_invOf_gram`, `fixedEffectsEstimate_eq_individualMean` and
+`fixedEffectsEstimate_eq_mean_sub`.
+-/
+
+/-- Hansen §17.8: the individual-specific means of the regressors,
+`X̄ᵢ = (1/Tᵢ) ∑_{t ∈ Sᵢ} Xᵢₜ`, stacked as the rows of an `N × k` matrix. It is the columnwise
+`individualMean`, as `withinTransformMatrix` is the columnwise `withinTransform`. Row `i` is
+`X̄ᵢ'`, so `individualMeanMatrix g X *ᵥ b` is the vector of `X̄ᵢ'b`; it is also the design
+matrix of the individual-level between regression of §17.14. -/
+noncomputable def individualMeanMatrix (g : n → ι) (X : Matrix n k ℝ) : Matrix ι k ℝ :=
+  Matrix.of fun j a => individualMean g (fun p => X p a) j
+
+omit [Fintype ι] [DecidableEq n] [DecidableEq k] in
+/-- The individual mean is linear: the mean of `Y − Xb` is `Ȳᵢ − X̄ᵢ'b`, for any
+coefficient vector `b`. At `b = β̂_fe` it links the two expressions of Hansen equation
+(17.51). No surjectivity is needed. -/
+theorem individualMean_sub_mulVec (g : n → ι) (y : n → ℝ) (X : Matrix n k ℝ) (b : k → ℝ) :
+    individualMean g (y - X *ᵥ b) = individualMean g y - individualMeanMatrix g X *ᵥ b := by
+  ext j
+  simp only [individualMean, individualMeanMatrix, Pi.sub_apply, Matrix.mulVec, dotProduct,
+    Matrix.of_apply, Finset.sum_sub_distrib, mul_sub, Finset.mul_sum, Finset.sum_mul]
+  conv_lhs => rw [Finset.sum_comm]
+  simp only [mul_assoc]
+
+omit [DecidableEq n] in
+/-- Hansen §17.11: in the error-component model without regressors, `Y = Du + ε`, the least
+squares estimate of the fixed effects is the vector of individual means,
+`û = (D'D)⁻¹(D'Y) = vec(Ȳᵢ)`. The left-hand side is `olsBeta (panelDummies g) v` by
+definition. -/
+theorem invOf_panelDummies_gram_mulVec {g : n → ι} (hg : Function.Surjective g) (v : n → ℝ) :
+    letI := panelDummiesGramInvertible hg
+    ⅟ ((panelDummies g)ᵀ * panelDummies g) *ᵥ ((panelDummies g)ᵀ *ᵥ v) =
+      individualMean g v := by
+  letI := panelDummiesGramInvertible hg
+  rw [invOf_panelDummies_gram hg, panelDummies_transpose_mulVec]
+  ext j
+  simp [individualMean, Matrix.mulVec_diagonal]
+
+/-- Hansen §17.17: the least squares estimate `û` of the fixed effects. It is the dummy
+block of the dummy variable regression (17.33)–(17.34) of `Y` on the individual dummies and
+`X` jointly, whose `X` block is `dummyVariableBeta`. The column-ordering note on
+`dummyVariableBeta` applies here too: the regression is on `[D X]` rather than Hansen's
+`[X D]`, and permuting the columns leaves each coefficient block unchanged (documented, not
+proved).
+
+As in Hansen, `û` is *defined* by least squares; the individual-mean formula (17.51) is then
+a theorem, `fixedEffectsEstimate_eq_individualMean`. -/
+noncomputable def fixedEffectsEstimate (g : n → ι) (X : Matrix n k ℝ) (y : n → ℝ)
+    [Invertible ((Matrix.fromCols (panelDummies g) X)ᵀ *
+      Matrix.fromCols (panelDummies g) X)] : ι → ℝ :=
+  fromColsLeftBeta (panelDummies g) X y
+
+omit [DecidableEq n] in
+/-- Hansen §17.17, the display "alternatively, using (17.34)": `û = (D'D)⁻¹D'(Y − Xβ̂_fe)`.
+The right-hand side is `olsBeta (panelDummies g) (y - X *ᵥ fixedEffectsBeta g X y)` by
+definition, so this is Hansen's recipe: replace `β` in (17.33) with `β̂_fe` and apply least
+squares.
+
+The proof reads the dummy block of the `[D X]` normal equations as the normal equations of
+the regression of `Y − Xβ̂` on `D`, and then uses Theorem 17.1 to replace the dummy variable
+`β̂` with `β̂_fe`. -/
+theorem fixedEffectsEstimate_eq_invOf_gram {g : n → ι} (hg : Function.Surjective g)
+    (X : Matrix n k ℝ) (y : n → ℝ)
+    [Invertible ((withinTransformMatrix g X)ᵀ * withinTransformMatrix g X)]
+    [Invertible ((Matrix.fromCols (panelDummies g) X)ᵀ *
+      Matrix.fromCols (panelDummies g) X)] :
+    letI := panelDummiesGramInvertible hg
+    fixedEffectsEstimate g X y = ⅟ ((panelDummies g)ᵀ * panelDummies g) *ᵥ
+      ((panelDummies g)ᵀ *ᵥ (y - X *ᵥ fixedEffectsBeta g X y)) := by
+  letI := panelDummiesGramInvertible hg
+  rw [fixedEffectsBeta_eq_dummyVariableBeta hg X y]
+  refine (olsBeta_eq_of_normal_equations (panelDummies g) _ _ ?_).symm
+  have hne := normal_equations_fromCols_left (panelDummies g) X y
+  unfold residual fitted at hne
+  rw [fromCols_full_fitted_eq] at hne
+  convert hne using 2
+  unfold fixedEffectsEstimate dummyVariableBeta
+  abel
+
+omit [DecidableEq n] in
+/-- **Hansen equation (17.51)**, first equality: each estimated fixed effect is the
+individual-specific mean of `Yᵢₜ − Xᵢₜ'β̂_fe`, `ûᵢ = (1/Tᵢ) ∑_{t ∈ Sᵢ} (Yᵢₜ − Xᵢₜ'β̂_fe)`.
+The fixed effects estimates are therefore obtained from individual-specific means, without
+the regression on `N + k` regressors. The panel need not be balanced. -/
+theorem fixedEffectsEstimate_eq_individualMean {g : n → ι} (hg : Function.Surjective g)
+    (X : Matrix n k ℝ) (y : n → ℝ)
+    [Invertible ((withinTransformMatrix g X)ᵀ * withinTransformMatrix g X)]
+    [Invertible ((Matrix.fromCols (panelDummies g) X)ᵀ *
+      Matrix.fromCols (panelDummies g) X)] :
+    fixedEffectsEstimate g X y = individualMean g (y - X *ᵥ fixedEffectsBeta g X y) := by
+  rw [fixedEffectsEstimate_eq_invOf_gram hg, invOf_panelDummies_gram_mulVec hg]
+
+omit [DecidableEq n] in
+/-- **Hansen equation (17.51)**, second equality: `ûᵢ = Ȳᵢ − X̄ᵢ'β̂_fe`. -/
+theorem fixedEffectsEstimate_eq_mean_sub {g : n → ι} (hg : Function.Surjective g)
+    (X : Matrix n k ℝ) (y : n → ℝ)
+    [Invertible ((withinTransformMatrix g X)ᵀ * withinTransformMatrix g X)]
+    [Invertible ((Matrix.fromCols (panelDummies g) X)ᵀ *
+      Matrix.fromCols (panelDummies g) X)] :
+    fixedEffectsEstimate g X y =
+      individualMean g y - individualMeanMatrix g X *ᵥ fixedEffectsBeta g X y := by
+  rw [fixedEffectsEstimate_eq_individualMean hg, individualMean_sub_mulVec]
+
 end HansenEconometrics
