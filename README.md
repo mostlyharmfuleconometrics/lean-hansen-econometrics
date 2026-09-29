@@ -48,7 +48,7 @@ coverage, assumptions, corrections, and open gaps.
 | [14](inventory/ch14-inventory.md) | Time Series | inventory only | Extracted and crosswalked. |
 | [15](inventory/ch15-inventory.md) | Multivariate Time Series | inventory only | Extracted and crosswalked. |
 | [16](inventory/ch16-inventory.md) | Non-Stationary Time Series | inventory only | Extracted and crosswalked. |
-| [17](inventory/ch17-inventory.md) | Panel Data | inventory only | Extracted and crosswalked. |
+| [17](inventory/ch17-inventory.md) | Panel Data | partial | For general (possibly unbalanced) panels: the individual dummy design and within transformation, both clauses of equation (17.19), both clauses of Theorem 17.1 (fixed effects equals dummy variable estimator), and the fixed effects estimates of equation (17.51). |
 | [18](inventory/ch18-inventory.md) | Difference in Differences | inventory only | Extracted and crosswalked. |
 | [19](inventory/ch19-inventory.md) | Nonparametric Regression | inventory only | Extracted and crosswalked. |
 | [20](inventory/ch20-inventory.md) | Series Regression | inventory only | Extracted and crosswalked. |
